@@ -54,7 +54,7 @@ function setup() {
   var msg = roster ? ('Roster tab found: ' + readRoster_().length + ' students.') :
     'Setup done, but there is no "Roster" tab yet. Import your roster CSV as a new sheet named Roster.';
   Logger.log(msg);
-  try { SpreadsheetApp.getUi().alert(msg); } catch (e) { /* run from editor without UI */ }
+  ss.toast(msg, 'Crossings setup', 10);  // non-blocking (an alert would hold the editor run open until OK)
 }
 
 /* ---------- web endpoints ---------- */
