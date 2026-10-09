@@ -2,7 +2,7 @@
 window.APP_CONFIG = {
   // Paste the Apps Script web app URL (ends in /exec). Leave "" for demo mode
   // (anyone can sign in, nothing is saved to the sheet).
-  scriptUrl: "",
+  scriptUrl: "https://script.google.com/macros/s/AKfycbycbxj9o4OSbnPVczgLJLDue8qfaSDcU1LDRdrW0j5bHXmHtXYEImqCqfewKN0EGTUNcg/exec",
 
   // Question banks. Add a new JSON file to data/ and list it here. Encrypted
   // banks (tools/encrypt_bank.py) show a password screen first.
