@@ -1,0 +1,8 @@
+source/
+__pycache__/
+*.pyc
+
+# Plaintext question banks stay local; only the encrypted .enc.json is published
+data/*.json
+!data/*.enc.json
+content/

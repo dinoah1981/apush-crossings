@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Crossings · APUSH Practice</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%231d2b44'/%3E%3Cpath d='M32 8l6 24-6 24-6-24z' fill='%23c9a14a'/%3E%3Cpath d='M8 32l24-6 24 6-24 6z' fill='%23f3ead6'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English+SC&family=IM+Fell+English:ital@0;1&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400&family=Spline+Sans+Mono:wght@500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="grain" aria-hidden="true"></div>
+  <header class="topbar">
+    <a class="brand" href="#" data-go="home" aria-label="Crossings home">
+      <svg viewBox="0 0 64 64" class="rose" aria-hidden="true"><circle cx="32" cy="32" r="29" fill="none" stroke="currentColor" stroke-width="2"/><path d="M32 6l6 26-6 26-6-26z" fill="var(--brass)"/><path d="M6 32l26-6 26 6-26 6z" fill="currentColor"/></svg>
+      <span class="brand-name">Crossings</span>
+    </a>
+    <div id="hud" class="hud" hidden></div>
+  </header>
+  <main id="app" tabindex="-1"><p class="loading">Unrolling the charts…</p></main>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <dialog id="zoom" class="zoom"><img alt=""><button class="btn ghost" data-close>Close</button></dialog>
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
