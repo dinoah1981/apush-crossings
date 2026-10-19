@@ -4,6 +4,10 @@ A static, gamified multiple-choice practice site. It runs on GitHub Pages and re
 
 **How a set works:** students answer 8–10 questions grouped by topic. They see right or wrong, but not the answer. In the **debrief** they must read a paragraph of context for each question they missed; the "Got it" button stays locked until they've had time to read. Then a **check** gives them a parallel question for each miss, and they retry until they get it right. Every attempt is logged.
 
+**Review all:** every finished set gets a "Review all explanations" button (on its map card and the set-complete screen) listing each question with the answer, the explanation, and what the student chose on their latest run. No timers, nothing scored.
+
+**Short answer models:** a bank can carry `saqs` (short-answer questions with a model answer per part, plus other answers that also earn credit). They appear after the sets as read-only stops: students read, the "I've read the models" button unlocks after a reading timer, and the read is logged to Set Results as `SAQ <n>` with score 1/1.
+
 **Game layer:** XP (+10 per correct answer, a streak bonus from 3 in a row, XP for checks, set-complete and flawless-set bonuses), nine ranks (Stowaway → Chronicler), a voyage map where each set unlocks the next, a topic-mastery chart (1.2–2.7), and a class leaderboard (first name + last initial). Practice replays of finished sets are logged but earn no XP.
 
 ## Password wall
@@ -52,10 +56,11 @@ If you later edit `Code.gs`, use **Deploy → Manage deployments → Edit → Ne
    - `sets`: `[{id, title, blurb, questions: [nums]}]`
    - `stimuli`: `{id: {type: "text", paragraphs, source} | {type: "image", src, alt, caption} | {type: "table", title, head, rows, note}}`
    - `questions`: `[{num, topic, stimulus, stem, choices, answer, explanation, parallel: {stimulus, stem, choices, answer, explanation}}]`
+   - `saqs` (optional): `[{id, title, blurb, stimulus, intro, parts: [{label, prompt, model, alsoCredit: [..]}]}]`
 2. Add the `.enc.json` file to `banks` in `config.js`. A bank picker appears on the home screen, and `?bank=<id>` links straight to it. Progress and XP are tracked per bank, and the sheet's Bank column keeps them apart.
 
 To produce a bank from a new PDF, the pipeline used here is in `tools/`:
-- `build_base_bank.py`: questions, stimuli, key, topic tags, sets.
+- A per-bank build script (questions, stimuli, key, topic tags, sets). It contains the answer key, so it lives in the gitignored `content/` folder (e.g. `content/u1u2/build_base_bank.py`, `content/u2pc/build.py`), never in `tools/`.
 - `WRITER_BRIEF.md`: the spec for writing explanations and parallel questions.
 - `merge_content.py`: merges and validates `content/set*.json` into the final bank.
 
