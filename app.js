@@ -6,7 +6,7 @@
   const LIVE = !!CFG.scriptUrl;
 
   // ---- tuning ---------------------------------------------------------------
-  const XP = { correct: 10, streakBonus: 5, streakFrom: 3, checkFirst: 6, checkRetry: 2, setComplete: 10, perfect: 25 };
+  const XP = { correct: 10, streakBonus: 5, streakFrom: 3, checkFirst: 6, checkRetry: 2, setComplete: 10, perfect: 25, saqRead: 10 };
   const LEVELS = [
     [0, "Stowaway"], [40, "Deckhand"], [100, "Settler"], [180, "Freeholder"], [280, "Merchant"],
     [400, "Burgess"], [550, "Magistrate"], [720, "Governor"], [920, "Chronicler"],
@@ -41,7 +41,7 @@
   let leadersCache = null;
 
   const progKey = () => `crossings:prog:${bank.id}:${profile.key}`;
-  const blankProg = () => ({ xp: 0, streak: 0, bestStreak: 0, sets: {}, topics: {}, run: null });
+  const blankProg = () => ({ xp: 0, streak: 0, bestStreak: 0, sets: {}, topics: {}, saqs: {}, run: null });
   const saveProg = () => store.set(progKey(), prog);
 
   function levelFor(xp) {
@@ -338,6 +338,10 @@
           ${bank.sets.map((s, i) => portCard(s, i)).join("")}
         </ol>
 
+        ${bank.saqs?.length ? `<h2 class="section-title"><span>Short Answer: Model Answers</span></h2>
+        <p class="muted small">No writing here. Read each question and the model answers to see what earns the points.</p>
+        <ol class="route">${bank.saqs.map(saqCard).join("")}</ol>` : ""}
+
         <div class="lower">
           <section>
             <h2 class="section-title"><span>Territory Chart</span></h2>
@@ -390,6 +394,25 @@
             <span class="port-title">${esc(s.title)}</span>
             <span class="port-blurb">${esc(s.blurb || "")}</span>
             <span class="port-topics">${topics.map((t) => `<i>${esc(t)}</i>`).join("")}</span>
+            <span class="port-status">${status}</span>
+          </span>
+        </button>
+        ${rec?.done ? `<button class="btn ghost small port-review" data-action="review-set" data-set="${s.id}">Review all explanations</button>` : ""}
+      </li>`;
+  }
+
+  const saqUnlocked = () => !bank.lockSets || bank.sets.every((s) => prog.sets[s.id]?.done);
+  function saqCard(s) {
+    const read = prog.saqs[s.id], open = saqUnlocked();
+    const cls = read ? "done" : open ? "open" : "locked";
+    const status = read ? "Model answers read" : open ? "Read the models" : "Locked: finish every set first";
+    return `
+      <li class="port ${cls}">
+        <button class="port-btn" data-action="open-saq" data-saq="${s.id}" ${open ? "" : "disabled"}>
+          <span class="seal"><span>S${s.id}</span></span>
+          <span class="port-body">
+            <span class="port-title">${esc(s.title)}</span>
+            <span class="port-blurb">${esc(s.blurb || "")}</span>
             <span class="port-status">${status}</span>
           </span>
         </button>
@@ -689,6 +712,7 @@
       first: prev?.first ?? score,
       perfect: perfect || !!prev?.perfect,
       runs: (prev?.runs || 0) + 1,
+      answers: { ...run.answers },
     };
     const checkAttempts = Object.values(run.tries).reduce((a, t) => a + t.length, 0);
     run.summary = { score, total, perfect, checkAttempts };
@@ -726,9 +750,93 @@
       }).join("")}</div>
       <div class="actions">
         <button class="btn ghost" data-action="close-run">Back to the map</button>
-        ${nextSet ? `<button class="btn primary" data-action="close-run" data-then="${nextSet.id}">Next: Set ${nextSet.id} →</button>` : ""}
+        <button class="btn ghost" data-action="close-run" data-review="${set.id}">Review all explanations</button>
+        ${nextSet ? `<button class="btn primary" data-action="close-run" data-then="${nextSet.id}">Next: Set ${nextSet.id} →</button>`
+          : bank.saqs?.length && saqUnlocked() ? `<button class="btn primary" data-action="close-run" data-saq="${bank.saqs[0].id}">Next: short answer models →</button>` : ""}
       </div>
     </section>`;
+  }
+
+  // review all (any finished set, any time; no timers) ------------------------------------
+  function viewSetReview(id) {
+    stopGate();
+    renderHud();
+    const set = SETS[+id], mine = prog.sets[set.id]?.answers || {};
+    let lastStim = null;
+    app.innerHTML = `<section class="run review-all">
+      <div class="run-head">
+        <button class="btn ghost small" data-action="home">← Map</button>
+        <div class="run-title"><span class="kicker">Set ${set.id} · review</span><span>${esc(set.title)}</span></div>
+        <div class="run-phase">All explanations</div>
+      </div>
+      <p class="muted small">Every question in the set with its answer and explanation${Object.keys(mine).length ? ", plus what you chose on your latest run" : ""}. Nothing here is scored.</p>
+      ${set.questions.map((num, i) => {
+        const q = Q[num], picked = mine[num];
+        const stim = q.stimulus && q.stimulus !== lastStim ? stimHTML(q.stimulus) : "";
+        if (q.stimulus) lastStim = q.stimulus;
+        return `<article class="review-item card">
+          ${stim}
+          <p class="qmeta">Question ${i + 1} · Topic ${esc(q.topic)} · ${esc(topicTitle(q.topic))}</p>
+          <h2 class="stem">${esc(q.stem)}</h2>
+          ${choicesHTML(q.choices, { picked, correct: q.answer, locked: true })}
+          <div class="log">
+            <p class="log-head"><span>Ship's log</span><span class="muted small">${picked ? `You chose ${picked} · ` : ""}Answer ${q.answer}</span></p>
+            <p>${esc(q.explanation || "Explanation coming soon.")}</p>
+          </div>
+        </article>`;
+      }).join("")}
+      <div class="actions"><button class="btn primary" data-action="home">Back to the map</button></div>
+    </section>`;
+    window.scrollTo({ top: 0 });
+  }
+
+  // short answer: read the question and model answers (nothing to write) ------------------
+  function viewSaq(id) {
+    stopGate();
+    renderHud();
+    const s = bank.saqs.find((x) => x.id === +id);
+    if (!s || !saqUnlocked()) return viewHome();
+    const again = !!prog.saqs[s.id];
+    const head = `<div class="run-head">
+        <button class="btn ghost small" data-action="home">← Map</button>
+        <div class="run-title"><span class="kicker">Short answer ${s.id} · read only</span><span>${esc(s.title)}</span></div>
+        <div class="run-phase">Model answers</div>
+      </div>`;
+    app.innerHTML = layout(head, s.stimulus, `
+      <p class="saq-note">You don't write anything here. Read the source, each question, and its model answer. Notice how each answer does exactly what the question asks, in complete sentences, with a specific piece of evidence.</p>
+      <p class="qmeta">${esc(s.intro || "")}</p>
+      ${s.parts.map((p) => `<section class="saq-part">
+        <h2 class="stem"><span class="saq-label">(${esc(p.label)})</span> ${esc(p.prompt)}</h2>
+        <div class="log"><p class="log-head"><span>Model answer</span></p><p>${esc(p.model)}</p></div>
+        ${p.alsoCredit?.length ? `<details class="also"><summary>Other answers that also earn the point</summary>
+          <ul>${p.alsoCredit.map((a) => `<li>${esc(a)}</li>`).join("")}</ul></details>` : ""}
+      </section>`).join("")}
+      <div class="actions"><button class="btn primary" data-action="saq-done" data-saq="${s.id}">…</button></div>`);
+    const text = s.parts.map((p) => `${p.prompt} ${p.model}`).join(" ");
+    gate($("[data-action=saq-done]"), readSeconds(text, 20, 60), again ? "Done: back to the map →" : "I've read the models →");
+    window.scrollTo({ top: 0 });
+  }
+
+  function saqDone(id) {
+    const s = bank.saqs.find((x) => x.id === +id);
+    const again = !!prog.saqs[s.id];
+    const gained = again ? 0 : XP.saqRead;
+    prog.xp += gained;
+    popXp(gained, $("[data-action=saq-done]"));
+    prog.saqs[s.id] = { at: Date.now(), times: (prog.saqs[s.id]?.times || 0) + 1 };
+    const { run: _omit, ...snapshot } = prog;
+    // Logged like a set (1/1 = read) so it lands in Set Results without an Apps Script change.
+    enqueue({
+      action: "set", set: `SAQ ${s.id}`, title: `Short answer ${s.id}: ${s.title} (model answers read)`, score: 1, total: 1,
+      missed: [], checkAttempts: 0, xpEarned: gained, totalXp: prog.xp, level: levelFor(prog.xp).name,
+      setsDone: Object.values(prog.sets).filter((x) => x.done).length, replay: again, progress: snapshot,
+    });
+    leadersCache = null;
+    saveProg();
+    const next = bank.saqs[bank.saqs.indexOf(s) + 1];
+    if (next && !prog.saqs[next.id]) { toast("Marked as read. On to the next one."); return viewSaq(next.id); }
+    toast("Model answers read.");
+    viewHome();
   }
 
   // ---- events -------------------------------------------------------------------------
@@ -751,6 +859,9 @@
       case "signout": return signOut();
       case "home": return viewHome();
       case "open-set": return openSet(el.dataset.set);
+      case "review-set": return viewSetReview(el.dataset.set);
+      case "open-saq": return viewSaq(el.dataset.saq);
+      case "saq-done": return saqDone(el.dataset.saq);
       case "begin": run.phase = "main"; saveProg(); return renderRun();
       case "abandon": prog.run = null; saveProg(); return viewHome();
       case "lock": return app._lock?.();
@@ -771,6 +882,8 @@
         prog.run = null;
         saveProg();
         const then = el.dataset.then;
+        if (el.dataset.review) return viewSetReview(el.dataset.review);
+        if (el.dataset.saq) return viewSaq(el.dataset.saq);
         return then && setUnlocked(bank.sets.findIndex((s) => s.id === +then)) ? openSet(then) : viewHome();
       }
     }

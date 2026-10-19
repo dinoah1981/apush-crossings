@@ -9,7 +9,8 @@ window.APP_CONFIG = {
   // The first bank is the default; others are reachable from the home screen
   // or with ?bank=<id> in the URL.
   banks: [
-    { id: "apush-u1u2", file: "data/apush-u1u2.enc.json" },
+    { id: "apush-u2pc", title: "Unit 2 Progress Check", file: "data/apush-u2pc.enc.json" },
+    { id: "apush-u1u2", title: "Units 1–2 Practice", file: "data/apush-u1u2.enc.json" },
   ],
 
   // Shown when a name can't be matched.
